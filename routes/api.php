@@ -8,27 +8,24 @@ use App\Http\Controllers\BorrowingController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API ROUTES
 |--------------------------------------------------------------------------
-| Semua route di sini otomatis prefix: /api
-| Contoh: http://localhost:8000/api/login
+| Prefix otomatis: /api
 |--------------------------------------------------------------------------
 */
 
 /*
 |--------------------------------------------------------------------------
-| AUTH (PUBLIC)
+| AUTH - PUBLIC
 |--------------------------------------------------------------------------
-| Bisa diakses tanpa login
 */
-Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
 /*
 |--------------------------------------------------------------------------
-| AUTHENTICATED ROUTES
+| AUTH - LOGIN REQUIRED
 |--------------------------------------------------------------------------
-| Wajib pakai token (Sanctum)
 */
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -43,34 +40,49 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', function (Request $request) {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logout berhasil']);
+        return response()->json([
+            'message' => 'Logout berhasil'
+        ]);
     });
 
     /*
     |--------------------------------------------------------------------------
-    | BOOKS
+    | BOOKS (SEMUA USER BISA LIHAT)
     |--------------------------------------------------------------------------
     */
-    Route::get('/books', [BookController::class, 'index']);     // list buku
-    Route::post('/books', [BookController::class, 'store']);    // tambah buku
-    Route::get('/books/{id}', [BookController::class, 'show']); // detail buku
-    Route::put('/books/{id}', [BookController::class, 'update']);// update buku
-    Route::delete('/books/{id}', [BookController::class, 'destroy']); // hapus buku
+    Route::get('/books', [BookController::class, 'index']);
+    Route::get('/books/{id}', [BookController::class, 'show']);
 
     /*
     |--------------------------------------------------------------------------
-    | BORROWINGS (PEMINJAMAN)
+    | BORROWING (USER)
     |--------------------------------------------------------------------------
     */
-    Route::get('/borrowings', [BorrowingController::class, 'index']); 
-    // semua peminjaman (admin)
+    Route::get('/my-borrowings', [BorrowingController::class, 'myBorrowings']);
+    Route::post('/borrowings/borrow', [BorrowingController::class, 'borrow']);
+    Route::post('/borrowings/return/{id}', [BorrowingController::class, 'returnBook']);
+});
 
-    Route::get('/my-borrowings', [BorrowingController::class, 'myBorrowings']); 
-    // peminjaman user login
+/*
+|--------------------------------------------------------------------------
+| ADMIN ONLY
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
-    Route::post('/borrowings/borrow', [BorrowingController::class, 'borrow']); 
-    // pinjam buku
+    /*
+    |--------------------------------------------------------------------------
+    | BOOK MANAGEMENT
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/books', [BookController::class, 'store']);
+    Route::put('/books/{id}', [BookController::class, 'update']);
+    Route::delete('/books/{id}', [BookController::class, 'destroy']);
 
-    Route::post('/borrowings/return/{id}', [BorrowingController::class, 'returnBook']); 
-    // kembalikan buku
+    /*
+    |--------------------------------------------------------------------------
+    | BORROWING MANAGEMENT
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/borrowings', [BorrowingController::class, 'index']);
 });
